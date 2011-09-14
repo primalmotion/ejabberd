@@ -3024,9 +3024,10 @@ broadcast_publish_item(Host, Node, NodeId, Type, NodeOptions, Removed, ItemId, F
 		true -> Payload;
 		false -> []
 	    end,
+	    PubAttr = [{"publisher", jlib:jid_to_string(From)}], 
 	    Stanza = event_stanza(
 		[{xmlelement, "items", nodeAttr(Node),
-		    [{xmlelement, "item", itemAttr(ItemId), Content}]}]),
+		    [{xmlelement, "item", itemAttr(ItemId)++PubAttr, Content}]}]), 
 	    broadcast_stanza(Host, From, Node, NodeId, Type,
 			     NodeOptions, SubsByDepth, items, Stanza, true),
 	    case Removed of
@@ -3834,11 +3835,13 @@ nodeAttr(Node) ->
 % item attributes
 itemAttr([]) -> [];
 itemAttr(ItemId) -> [{"id", ItemId}].
+itemAttr(ItemId, Publisher) -> itemAttr(ItemId) ++ [{"publisher", jlib:jid_to_string(Publisher)}].
 
 % build item elements from item list
 itemsEls(Items) ->
-    lists:map(fun(#pubsub_item{itemid = {ItemId, _}, payload = Payload}) ->
-	{xmlelement, "item", itemAttr(ItemId), Payload}
+    lists:map(fun(#pubsub_item{itemid = {ItemId, _},
+              creation = {_, Publisher}, payload = Payload}) ->
+	{xmlelement, "item", itemAttr(ItemId, Publisher), Payload}
     end, Items).
 
 add_message_type({xmlelement, "message", Attrs, Els}, Type) ->
